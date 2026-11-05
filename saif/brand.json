@@ -106,6 +106,21 @@
       "from": "NVIDIA DLI training portal",
       "to": "SAIF course issue tracker",
       "min": 1
+    },
+    {
+      "from": " | NVIDIA DLI",
+      "to": " | SAIF",
+      "min": 0
+    },
+    {
+      "from": "free NVIDIA DLI browser course",
+      "to": "free SAIF browser course",
+      "min": 0
+    },
+    {
+      "from": "NVIDIA DLI</a>",
+      "to": "SAIF</a>",
+      "min": 0
     }
   ],
   "strip_query_params": [
