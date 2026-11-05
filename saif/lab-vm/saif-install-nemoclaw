@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Install NemoClaw (OpenShell + OpenClaw sandbox) pointed at the lab model router.
+# The router key is read from stdin / prompt only: never argv, never a file.
+#   ssh -t labadmin@<vm> saif-install-nemoclaw          # prompts for the key
+#   saif-install-nemoclaw --status | --attach
+set -euo pipefail
+. /etc/saif/lab.env
+case "${1:-}" in
+  --status) tmux has-session -t nemoclaw-install 2>/dev/null && echo "installer running (saif-install-nemoclaw --attach)" || echo "installer not running"; tail -n 25 ~/nemoclaw-install.log 2>/dev/null; exit 0 ;;
+  --attach) exec tmux attach -t nemoclaw-install ;;
+esac
+[ "$(id -u)" -ne 0 ] || { echo "run as labadmin, not root" >&2; exit 1; }
+docker info >/dev/null 2>&1 || { echo "docker not usable by $USER yet (log out/in after cloud-init)" >&2; exit 1; }
+if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL: " KEY; echo; else read -r KEY; fi
+[ -n "$KEY" ] || { echo "empty key" >&2; exit 1; }
+
+# tmux keeps the long onboarding alive across SSH drops; the key travels only in its env.
+tmux new-session -d -s nemoclaw-install \
+  -e COMPATIBLE_API_KEY="$KEY" \
+  "set -o pipefail; curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/${NEMOCLAW_INSTALL_REF}/install.sh | \
+     NEMOCLAW_INSTALL_REF=${NEMOCLAW_INSTALL_REF} NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 \
+     NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=custom NEMOCLAW_ENDPOINT_URL=${SAIF_LLM_URL} \
+     NEMOCLAW_MODEL=${SAIF_LLM_MODEL} NEMOCLAW_PREFERRED_API=openai-completions \
+     NEMOCLAW_SANDBOX_NAME=${SAIF_SANDBOX} NEMOCLAW_POLICY_TIER=balanced NEMOCLAW_WEB_SEARCH_PROVIDER=none \
+     bash 2>&1 | tee ~/nemoclaw-install.log; echo EXIT=\$? | tee -a ~/nemoclaw-install.log; \
+     sudo systemctl restart saif-agent-shim; exec bash"
+unset KEY
+echo "NemoClaw install started in tmux 'nemoclaw-install' (log: ~/nemoclaw-install.log)."
+echo "Follow: saif-install-nemoclaw --attach   |   check: saif-install-nemoclaw --status"
