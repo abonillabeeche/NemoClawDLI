@@ -11,8 +11,10 @@ case "${1:-}" in
 esac
 [ "$(id -u)" -ne 0 ] || { echo "run as labadmin, not root" >&2; exit 1; }
 docker info >/dev/null 2>&1 || { echo "docker not usable by $USER yet (log out/in after cloud-init)" >&2; exit 1; }
-if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL: " KEY; echo; else read -r KEY; fi
-[ -n "$KEY" ] || { echo "empty key" >&2; exit 1; }
+KEY=""
+if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL: " KEY || true; echo
+else read -r KEY || true; fi
+[ -n "$KEY" ] || { echo "no key on stdin: run from a real terminal (ssh -t ...) or pipe it: ssh ... saif-install-nemoclaw < keyfile" >&2; exit 1; }
 
 # tmux keeps the long onboarding alive across SSH drops; the key travels only in its env.
 tmux new-session -d -s nemoclaw-install \
