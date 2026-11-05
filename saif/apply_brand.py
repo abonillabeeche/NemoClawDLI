@@ -42,6 +42,23 @@ def main():
         sys.exit(f"{root} does not look like a built site")
 
     rules = [("color", r) for r in cfg["colors"]] + [("text", r) for r in cfg["text"]]
+    llm = cfg.get("llm", {})
+    if llm.get("base_url"):
+        base = llm["base_url"].rstrip("/")
+        if not base.startswith("https://"):
+            sys.exit("llm.base_url must be https:// (the site is served over HTTPS; browsers block mixed content)")
+        subst = {"{base_url}": base, "{router_label}": llm.get("router_label", "lab model router"),
+                 "{key_help_url}": llm.get("key_help_url", "")}
+        for r in llm["rules"]:
+            to = r["to"]
+            for k, v in subst.items():
+                to = to.replace(k, v)
+            rules.append(("text", {**r, "to": to}))
+        for old, new in llm.get("model_map", {}).items():
+            rules.append(("text", {"from": '"%s"' % old, "to": '"%s"' % new, "min": 1}))
+        print(f"llm: default endpoint -> {base}")
+    else:
+        print("llm: base_url empty, keeping upstream NVIDIA endpoint defaults")
     counts = {r["from"]: 0 for _, r in rules}
     params, attribution = cfg.get("strip_query_params", []), cfg.get("attribution_html", "")
     param_hits = footer_hits = files_changed = 0

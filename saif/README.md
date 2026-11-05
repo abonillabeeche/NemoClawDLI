@@ -26,3 +26,15 @@ python3 -m http.server -d /tmp/saif-preview 8765   # open /nemoclaw/index.html
 
 The course still uses NVIDIA endpoints by default; any OpenAI-compatible HTTPS endpoint
 with CORS can be set per route in the key panel.
+
+## Lab model router (`llm` in brand.json)
+
+Empty `llm.base_url` = upstream NVIDIA defaults. Set it (HTTPS only) to make the lab LiteLLM
+router the default chat + embedding route: swaps the default endpoint constant, drops the
+`nvapi-` key checks, disables the NVIDIA DLI iframe relay, and rewrites the model/key copy.
+
+Router requirements: HTTPS, CORS, and `Access-Control-Allow-Private-Network: true` on
+preflight (the page is public, the router is private). Expose the models under the course ids
+(`nvidia/nemotron-3.5-lightning-30b-a3b`, `nvidia/nemotron-3-embed-1b`) so lesson text and the
+precomputed RAG vectors stay valid; otherwise fill `model_map` and rerun
+`scripts/materials/build_rag_index.py`.

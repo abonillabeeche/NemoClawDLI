@@ -126,5 +126,89 @@
   "strip_query_params": [
     "ncid"
   ],
-  "attribution_html": "<p class=\"saif-attribution\">SAIF (SUSE AI Factory) edition, adapted from the NVIDIA Deep Learning Institute course <a href=\"https://github.com/NVDLI/NemoClawDLI\" target=\"_blank\" rel=\"noopener\">NVDLI/NemoClawDLI</a> under the Apache License 2.0. Modified for SAIF branding; not affiliated with or endorsed by NVIDIA. NVIDIA, NemoClaw, OpenShell and Nemotron are trademarks of NVIDIA Corporation.</p>"
+  "attribution_html": "<p class=\"saif-attribution\">SAIF (SUSE AI Factory) edition, adapted from the NVIDIA Deep Learning Institute course <a href=\"https://github.com/NVDLI/NemoClawDLI\" target=\"_blank\" rel=\"noopener\">NVDLI/NemoClawDLI</a> under the Apache License 2.0. Modified for SAIF branding; not affiliated with or endorsed by NVIDIA. NVIDIA, NemoClaw, OpenShell and Nemotron are trademarks of NVIDIA Corporation.</p>",
+  "llm": {
+    "note": "Lab model router (LiteLLM, reachable only on the lab LAN / Tailscale). Rules below apply only when base_url is set. Must be HTTPS and answer CORS + Access-Control-Allow-Private-Network. Recommended: alias the router models to the course ids so lesson text and the precomputed RAG vectors (nemotron-3-embed-1b, 2048d) stay valid; otherwise fill model_map and rerun scripts/materials/build_rag_index.py.",
+    "base_url": "",
+    "router_label": "SAIF lab model router",
+    "model_map": {},
+    "rules": [
+      {
+        "from": "export const DEFAULT_MODEL_API_BASE_URL = \"https://integrate.api.nvidia.com/v1\";",
+        "to": "export const DEFAULT_MODEL_API_BASE_URL = \"{base_url}\";",
+        "min": 1
+      },
+      {
+        "from": "export function iframeProxyModeEnabled() {",
+        "to": "export function iframeProxyModeEnabled() {\n  return false; // SAIF: never relay lab-router calls through NVIDIA's DLI proxy",
+        "min": 1
+      },
+      {
+        "from": "placeholder=\"https://integrate.api.nvidia.com/v1\"",
+        "to": "placeholder=\"{base_url}\"",
+        "min": 2
+      },
+      {
+        "from": "(defaultEndpoint && !key.startsWith(\"nvapi-\")) || (!defaultEndpoint && !key)",
+        "to": "!key",
+        "min": 1
+      },
+      {
+        "from": "defaultEndpoint ? \"Key should start with nvapi-\" : \"Enter the key for this endpoint\"",
+        "to": "\"Enter the key for this endpoint\"",
+        "min": 1
+      },
+      {
+        "from": "embeddingEndpoint === DEFAULT_MODEL_API_BASE_URL && !embeddingKey.startsWith(\"nvapi-\")",
+        "to": "false",
+        "min": 1
+      },
+      {
+        "from": "return active?.startsWith(\"nvapi-\") ? active : null;",
+        "to": "return active || null;",
+        "min": 1
+      },
+      {
+        "from": "Chat API bearer key (NVIDIA keys start with <code>nvapi-</code>)",
+        "to": "Chat API bearer key ({router_label} key)",
+        "min": 1
+      },
+      {
+        "from": "placeholder=\"nvapi-&hellip;\"",
+        "to": "placeholder=\"router key\"",
+        "min": 1
+      },
+      {
+        "from": ": \"nvapi-&hellip;\"}",
+        "to": ": \"router key\"}",
+        "min": 1
+      },
+      {
+        "from": "Chat and embeddings use models from <a href=\"https://build.nvidia.com/?ncid=ref-dli-146986\" target=\"_blank\" rel=\"noopener\"><code>build.nvidia.com</code></a> by default.",
+        "to": "Chat and embeddings use the {router_label} by default (lab network or Tailscale only).",
+        "min": 1
+      },
+      {
+        "from": "<div class=\"sys-name\">build.nvidia.com</div>",
+        "to": "<div class=\"sys-name\">{router_label}</div>",
+        "min": 1
+      },
+      {
+        "from": "Use NVIDIA-hosted Nemotron models through an OpenAI-compatible API.",
+        "to": "Use lab-hosted Nemotron models through an OpenAI-compatible API.",
+        "min": 1
+      },
+      {
+        "from": "Calls use your <code>nvapi-</code> key and the selected model route.",
+        "to": "Calls use your router key and the selected model route.",
+        "min": 1
+      },
+      {
+        "from": "No key yet? <a href=\"${BUILD_SIGNUP_URL}\" target=\"_blank\" rel=\"noopener\">Sign up at build.nvidia.com &rarr;</a>\n          then open API Keys and generate one.",
+        "to": "No key yet? Ask the lab admin for a {router_label} key (<a href=\"{key_help_url}\" target=\"_blank\" rel=\"noopener\">request one &rarr;</a>).",
+        "min": 1
+      }
+    ],
+    "key_help_url": "https://github.com/abonillabeeche/NemoClawDLI/issues"
+  }
 }
