@@ -1,0 +1,115 @@
+{
+  "name": "SAIF",
+  "long_name": "SUSE AI Factory",
+  "note": "Applied to the BUILT site (public/), never to source, so syncing upstream main stays conflict-free. Each rule's `min` is the fewest hits expected across the whole site; the script fails when upstream drifts below it so we notice instead of shipping half-branded pages.",
+  "skip_dirs": [
+    "vendor",
+    ".git"
+  ],
+  "extensions": [
+    ".html",
+    ".js",
+    ".mjs",
+    ".css",
+    ".svg",
+    ".json"
+  ],
+  "colors": [
+    {
+      "from": "#76b900",
+      "to": "#30BA78",
+      "min": 50
+    },
+    {
+      "from": "#4a7a00",
+      "to": "#1F8A5B",
+      "min": 1
+    },
+    {
+      "from": "#aee23a",
+      "to": "#90EBCD",
+      "min": 1
+    },
+    {
+      "from": "#8fcd00",
+      "to": "#5CCB97",
+      "min": 0
+    },
+    {
+      "from": "rgba(118,185,0,",
+      "to": "rgba(48,186,120,",
+      "min": 1
+    },
+    {
+      "from": "rgba(118, 185, 0,",
+      "to": "rgba(48, 186, 120,",
+      "min": 0
+    },
+    {
+      "from": "#9bd14a",
+      "to": "#30BA78",
+      "min": 1
+    },
+    {
+      "from": "#84b637",
+      "to": "#2FA36B",
+      "min": 0
+    },
+    {
+      "from": "#a3dd1f",
+      "to": "#5CCB97",
+      "min": 0
+    },
+    {
+      "from": "#8ecc2f",
+      "to": "#4CC28A",
+      "min": 0
+    },
+    {
+      "from": "#5a8e00",
+      "to": "#1F8A5B",
+      "min": 0
+    },
+    {
+      "from": "#4f7f00",
+      "to": "#1F8A5B",
+      "min": 0
+    }
+  ],
+  "text": [
+    {
+      "from": "NVIDIA DLI · ",
+      "to": "SAIF · ",
+      "min": 2
+    },
+    {
+      "from": ">NVIDIA · Securing Agents<",
+      "to": ">SAIF · Securing Agents<",
+      "min": 8
+    },
+    {
+      "from": "<span class=\"logo\">NVIDIA DLI</span>",
+      "to": "<span class=\"logo\">SAIF</span>",
+      "min": 1
+    },
+    {
+      "from": "https://www.nvidia.com/en-us/learn/training/support/",
+      "to": "https://github.com/abonillabeeche/NemoClawDLI/issues",
+      "min": 1
+    },
+    {
+      "from": "https://www.nvidia.com/en-us/training/",
+      "to": "https://github.com/abonillabeeche/NemoClawDLI/issues",
+      "min": 0
+    },
+    {
+      "from": "NVIDIA DLI training portal",
+      "to": "SAIF course issue tracker",
+      "min": 1
+    }
+  ],
+  "strip_query_params": [
+    "ncid"
+  ],
+  "attribution_html": "<p class=\"saif-attribution\">SAIF (SUSE AI Factory) edition, adapted from the NVIDIA Deep Learning Institute course <a href=\"https://github.com/NVDLI/NemoClawDLI\" target=\"_blank\" rel=\"noopener\">NVDLI/NemoClawDLI</a> under the Apache License 2.0. Modified for SAIF branding; not affiliated with or endorsed by NVIDIA. NVIDIA, NemoClaw, OpenShell and Nemotron are trademarks of NVIDIA Corporation.</p>"
+}

@@ -1,0 +1,80 @@
+# SAIF edition: build the upstream course from `main` (an untouched mirror of
+# NVDLI/NemoClawDLI, already gated by upstream CI), apply saif/brand.json to the
+# built site, and deploy it to this fork's GitHub Pages. Only saif/ and this file
+# differ from upstream, so `main` keeps merging into `saif` without conflicts.
+name: saif-pages
+
+on:
+  push:
+    branches: [saif]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: saif-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the branding (saif)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: brand
+          persist-credentials: false
+      - name: Check out the course source (main)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          path: site
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - name: Install pinned build tooling
+        working-directory: site
+        run: |
+          python3 -m pip install --require-hashes --no-deps --only-binary=:all: -r scripts/materials/requirements.lock
+          corepack enable
+          (cd scripts/runtime && pnpm install --frozen-lockfile --ignore-scripts)
+          npm ci --prefix scripts/browser-vendor --ignore-scripts
+          (cd scripts/runtime && pnpm exec playwright-core install --with-deps chromium)
+      - name: Build the static course
+        working-directory: site
+        run: |
+          export CHROME_BIN="$(cd scripts/runtime && node -p 'require("playwright-core").chromium.executablePath()')"
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          BUILD_PAGES_PULL_MATERIALS=0 bash scripts/build/build_pages.sh "$RUNNER_TEMP/public"
+      - name: Apply SAIF branding
+        run: python3 -I brand/saif/apply_brand.py "$RUNNER_TEMP/public"
+      - name: Archive the site
+        run: tar --dereference --hard-dereference --directory "$RUNNER_TEMP/public" -cf "$RUNNER_TEMP/artifact.tar" --exclude=.git .
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
