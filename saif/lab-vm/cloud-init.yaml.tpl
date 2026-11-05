@@ -1,5 +1,5 @@
 #cloud-config
-# SAIF NemoClaw lab VM. Rendered by create-vm.sh; @@FILE:name@@ / @@VAR@@ placeholders are filled there.
+# SAIF NemoClaw lab VM. Rendered by create-vm.sh (file and variable placeholders are filled there).
 hostname: @@NAME@@
 users:
   - name: labadmin
