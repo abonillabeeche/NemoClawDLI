@@ -6,7 +6,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 : "${KUBECONFIG_FILE:=$HOME/claude/virt/far-edge.yaml}"
 : "${NS:=saif}" "${NAME:=saif-nemoclaw}"
-: "${IP:=10.0.0.162}" "${PREFIX:=24}" "${GATEWAY:=10.0.0.1}" "${DNS:=10.0.0.1}"
+: "${IP:=10.0.0.164}" "${PREFIX:=24}" "${GATEWAY:=10.0.0.1}" "${DNS:=10.0.0.1}"
 : "${MAC:=52:54:00:5a:1f:62}" "${NET:=default/vlan1}"
 : "${CPU:=4}" "${MEM:=12Gi}" "${MEM_REQ:=8Gi}" "${DISK:=60Gi}"
 : "${IMAGE:=kasm-autoscale/ubuntu-noble}"

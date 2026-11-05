@@ -17,14 +17,14 @@ Tailscale only. `/ws/terminal` is a shell on the VM by design (same as the launc
 ## Use
 
 ```bash
-saif/lab-vm/create-vm.sh                      # far-edge, 10.0.0.162, 4 vCPU / 12Gi (+8G swap) / 60Gi
+saif/lab-vm/create-vm.sh                      # far-edge, 10.0.0.164, 4 vCPU / 12Gi (+8G swap) / 60Gi
 # reserve the IP for the MAC on the Calix, then:
-ssh labadmin@10.0.0.162 cloud-init status --wait
-ssh -t labadmin@10.0.0.162 saif-install-nemoclaw     # prompts for the model-router key (stdin only)
-ssh labadmin@10.0.0.162 saif-install-nemoclaw --status
+ssh labadmin@10.0.0.164 cloud-init status --wait
+ssh -t labadmin@10.0.0.164 saif-install-nemoclaw     # prompts for the model-router key (stdin only)
+ssh labadmin@10.0.0.164 saif-install-nemoclaw --status
 ```
 
-Open `http://10.0.0.162/nemoclaw/03a-kickstart.html`, set the launchable URL to `http://10.0.0.162`,
+Open `http://10.0.0.164/nemoclaw/03a-kickstart.html`, set the launchable URL to `http://10.0.0.164`,
 and connect. Router/model live in `/etc/saif/lab.env` (`SAIF_LLM_URL`, `SAIF_LLM_MODEL`); change them
 with `nemoclaw saif-agent inference set ...` after install. `saif-update-course` refreshes the site.
 
