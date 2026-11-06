@@ -29,7 +29,31 @@
         "from": "capabilities: [\"generation\", \"streaming\", \"tool-calling\"], maxTok: 1024,",
         "to": "capabilities: [\"generation\", \"streaming\", \"tool-calling\"], maxTok: 8192,",
         "min": 1,
-        "why": "GLM cannot disable thinking; 1024 tokens is spent on reasoning before the maze move (01a 'direct' mode)"
+        "why": "01a direct maze: headroom for a move"
+      },
+      {
+        "from": "? { chat_template_kwargs: { enable_thinking: false } } : {},",
+        "to": "? { chat_template_kwargs: { enable_thinking: false } } : { reasoning_effort: \"low\" },",
+        "min": 2,
+        "why": "02c worker/answer settings on the lab endpoint"
+      },
+      {
+        "from": "? { chat_template_kwargs: { enable_thinking: false } } : {};",
+        "to": "? { chat_template_kwargs: { enable_thinking: false } } : { reasoning_effort: \"low\" };",
+        "min": 1,
+        "why": "02c LangChain workers on the lab endpoint"
+      },
+      {
+        "from": "  maxTokens: 1500,",
+        "to": "  maxTokens: 4096,",
+        "min": 1,
+        "why": "02c LangChain worker headroom"
+      },
+      {
+        "from": "{ chat_template_kwargs: { enable_thinking: false } }",
+        "to": "{ chat_template_kwargs: { enable_thinking: false }, reasoning_effort: \"low\" }",
+        "min": 1,
+        "why": "GLM ignores enable_thinking:false; reasoning_effort low disables its reasoning"
       }
     ]
   }
