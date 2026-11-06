@@ -93,7 +93,9 @@ async def terminal(ws, path):
         return
 
     if pipe:
-        proc = await asyncio.create_subprocess_exec(*argv, stdin=asyncio.subprocess.PIPE,
+        # One-shot mode (course: sandboxExec, host exec): no stdin, like a real launchable.
+        # An open stdin pipe keeps `openshell sandbox exec` waiting forever.
+        proc = await asyncio.create_subprocess_exec(*argv, stdin=asyncio.subprocess.DEVNULL,
                                                     stdout=asyncio.subprocess.PIPE,
                                                     stderr=asyncio.subprocess.PIPE, env=env,
                                                     start_new_session=True)
@@ -102,20 +104,14 @@ async def terminal(ws, path):
             while chunk := await stream.read(4096):
                 await send(ws, type=name, stream=name, data=chunk.decode(errors="replace"))
 
-        async def feed():
-            async for msg in ws:
-                try:
-                    m = json.loads(msg)
-                except ValueError:
-                    continue
-                if m.get("type") == "input" and proc.stdin:
-                    proc.stdin.write(str(m.get("data", "")).encode())
-                    await proc.stdin.drain()
+        async def drain_client():
+            async for _ in ws:  # ignore input frames; keep the socket serviced
+                pass
 
-        feeder = asyncio.ensure_future(feed())
+        drainer = asyncio.ensure_future(drain_client())
         await asyncio.gather(pump(proc.stdout, "stdout"), pump(proc.stderr, "stderr"))
         code = await proc.wait()
-        feeder.cancel()
+        drainer.cancel()
         await send(ws, type="exit", code=code)
         return
 
