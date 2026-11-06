@@ -98,6 +98,10 @@ write_files:
       User=labadmin
       ExecStart=/usr/local/bin/saif-recover
       TimeoutStartSec=1500
+      # recover starts the host dashboard forward as a child; keep it alive after the script exits
+      # (a plain oneshot gets its leftover processes killed when it finishes).
+      RemainAfterExit=yes
+      KillMode=process
       [Install]
       WantedBy=multi-user.target
   - path: /etc/systemd/system/saif-agent-shim.service
