@@ -42,6 +42,7 @@ def main():
     if "rules_from" in llm_cfg and "rules" not in llm_cfg:  # overlay reuses the main config's llm rules
         base = json.loads((Path(a.config).parent / llm_cfg["rules_from"]).read_text())
         llm_cfg["rules"] = base["llm"]["rules"]
+    llm_cfg["rules"] = llm_cfg.get("rules", []) + llm_cfg.get("extra_rules", [])  # overlay-specific fixes
     root = Path(a.root)
     if not (root / "nemoclaw" / "index.html").is_file() and not (root / "index.html").is_file():
         sys.exit(f"{root} does not look like a built site")

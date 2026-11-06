@@ -1,7 +1,17 @@
 {
   "note": "Lab-VM overlay, applied with apply_brand.py --only-llm on top of the already-branded public site (saif-update-course). Model calls go to the VM's own origin: nginx /v1 -> lab LiteLLM router, /v1/embeddings -> TEI.",
-  "skip_dirs": ["vendor", ".git"],
-  "extensions": [".html", ".js", ".mjs", ".css", ".svg", ".json"],
+  "skip_dirs": [
+    "vendor",
+    ".git"
+  ],
+  "extensions": [
+    ".html",
+    ".js",
+    ".mjs",
+    ".css",
+    ".svg",
+    ".json"
+  ],
   "colors": [],
   "text": [],
   "llm": {
@@ -13,6 +23,14 @@
       "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": "glm-5.3-flash",
       "nvidia/nemotron-3-embed-1b": "bge-small-en-v1.5"
     },
-    "rules_from": "../brand.json"
+    "rules_from": "../brand.json",
+    "extra_rules": [
+      {
+        "from": "capabilities: [\"generation\", \"streaming\", \"tool-calling\"], maxTok: 1024,",
+        "to": "capabilities: [\"generation\", \"streaming\", \"tool-calling\"], maxTok: 8192,",
+        "min": 1,
+        "why": "GLM cannot disable thinking; 1024 tokens is spent on reasoning before the maze move (01a 'direct' mode)"
+      }
+    ]
   }
 }
