@@ -54,6 +54,12 @@
         "to": "{ chat_template_kwargs: { enable_thinking: false }, reasoning_effort: \"low\" }",
         "min": 1,
         "why": "GLM ignores enable_thinking:false; reasoning_effort low disables its reasoning"
+      },
+      {
+        "from": "idleMs = 90000, totalMs = 240000",
+        "to": "idleMs = 240000, totalMs = 600000",
+        "min": 2,
+        "why": "OpenClaw agent turns on GLM can be silent >90s (large system prompt + reasoning); courseTurn/openclawChat deadlines"
       }
     ]
   }
