@@ -20,7 +20,7 @@ Tailscale only. `/ws/terminal` is a shell on the VM by design (same as the launc
 saif/lab-vm/create-vm.sh                      # far-edge, 10.0.0.164, 4 vCPU / 12Gi (+8G swap) / 60Gi
 # reserve the IP for the MAC on the Calix, then:
 ssh labadmin@10.0.0.164 cloud-init status --wait
-ssh -t labadmin@10.0.0.164 saif-install-nemoclaw     # prompts for the model-router key (stdin only)
+echo <router-key> | ssh labadmin@10.0.0.164 saif-install-nemoclaw   # lab router takes any bearer
 ssh labadmin@10.0.0.164 saif-install-nemoclaw --status
 ```
 
@@ -31,3 +31,12 @@ with `nemoclaw saif-agent inference set ...` after install. `saif-update-course`
 NemoClaw is pinned to a reviewed main commit (`NEMOCLAW_REF`); the `v1.0.0-rc1` tag does not
 contain the installer. NemoClaw does not auto-recover after a VM reboot; follow its headless
 "recover after a host reboot" sequence.
+
+## Validated 2026-11-05 (far-edge, 10.0.0.164)
+
+NemoClaw `525beba`, OpenShell 0.0.116, OpenClaw 2026.9.2, sandbox `saif-agent`, model `glm-5.3-flash`
+via `http://10.0.0.10:30803/v1`. `/api/agent` returns the gateway token, `/cli/gateway` reaches the
+OpenClaw `connect.challenge` through nginx, `/ws/terminal` runs `openshell sandbox list`, and an agent
+turn answers. Gotchas fixed in this kit: binutils, umask 022 for nvm, `NEMOCLAW_TRUSTED_PRIVATE_HOSTS`
+for the RFC1918 router, nginx HTTP/1.1 to the shim. Switch model:
+`nemoclaw inference set --provider compatible-endpoint --model <id> --sandbox saif-agent`.
