@@ -2,7 +2,8 @@
 """Lab stand-in for the Brev launchable endpoints the course calls (modules 3-4).
 
   GET /healthz             -> {"status":"ok"}
-  GET /api/agent           -> {"agent":{"dashboardUrl":"...#token=<gateway token>"}}  (503 {"status":"starting"} until ready)
+  GET /api/agent           -> {"agent":{"agent":"openclaw","name":<sandbox>,"dashboardUrl":"/api/agent/launch"}}
+                              (503 {"status":"starting"} until the sandbox answers dashboard-url)
   WS  /ws/terminal?cmd=..  -> runs `bash -lc cmd` as this user; frames {"type":"stdout|stderr","data"} then {"type":"exit","code"}
                               client sends {"type":"input","data"}; &stdio=pipe separates stdout/stderr
 
@@ -57,7 +58,11 @@ async def process_request(path, headers):
     if p == "/api/agent":
         url, err = await asyncio.get_running_loop().run_in_executor(None, dashboard_url)
         if url:
-            return _json(HTTPStatus.OK, {"agent": {"name": "openclaw", "sandbox": SANDBOX, "dashboardUrl": url}})
+            # Current launchable contract: a same-origin /api/agent/launch handoff, no token in the URL.
+            # The course then reads the gateway token through /ws/terminal and pairs a signed device
+            # identity (OpenClaw >= 2026.9 rejects the legacy token-only Control UI login).
+            return _json(HTTPStatus.OK, {"agent": {"agent": "openclaw", "name": SANDBOX,
+                                                   "dashboardUrl": "/api/agent/launch"}})
         return _json(HTTPStatus.SERVICE_UNAVAILABLE, {"status": "starting", "message": err})
     if p == "/ws/terminal":
         return None  # continue with the WebSocket handshake
