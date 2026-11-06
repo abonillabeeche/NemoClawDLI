@@ -14,6 +14,11 @@ call. Plain NemoClaw has none of those endpoints, so this VM adds them:
 Access: nginx basic auth (user `saif`, password in Secret `saif/saif-course-auth`), lab LAN /
 Tailscale only. `/ws/terminal` is a shell on the VM by design (same as the launchable).
 
+## Access and credentials
+
+Not in this (public) repo. Hosts, logins and how to obtain each credential are in the local,
+private file `~/claude/saif-lab/ACCESS.md` on the operator's machine.
+
 ## Use (fully unattended)
 
 Prereqs once: Calix reservation 10.0.0.164 <-> 52:54:00:5a:1f:62, DNS `saif-lab.5glinux.com` -> 10.0.0.164,
@@ -63,7 +68,7 @@ gateway logs `closed before connect`. Use either:
 site and re-embeds every `rag_index.json` (`rebuild_rag_index.py`). Result on the VM only:
 
 - default chat/embedding endpoint `https://saif-lab.5glinux.com/v1` (same origin; nginx `/v1/` ->
-  router with `Bearer <router-key>`, `/v1/embeddings` -> TEI); any text works as the key
+  router with the lab router key injected, `/v1/embeddings` -> TEI); any text works as the key
 - models: `nvidia/nemotron-3.5-lightning-30b-a3b` and the omni model -> `glm-5.3-flash` (no vision;
   GLM cannot disable thinking, so "direct" and "reasoning" maze modes both reason);
   `nvidia/nemotron-3-embed-1b` -> `bge-small-en-v1.5` (384d; the course's embed model is not public)

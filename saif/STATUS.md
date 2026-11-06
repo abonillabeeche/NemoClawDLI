@@ -20,7 +20,7 @@ Fork `abonillabeeche/NemoClawDLI`, branch `saif`. `main` mirrors upstream NVDLI/
   1b 6/6, 1c 26/26, 2a 21/21, 2b 21/21, 2c 16/16, 3a 17/17, 3b 13/13, 3c 11/11, 4a 14/14, 4b 4/4,
   glossary 6/6; Course Assistant answers; other pages load without console/HTTP errors.
 - **Reboot recovery**: 3 reboots; healthy ~2 min after boot (`saif-nemoclaw-recover.service`).
-- Model stack: chat `glm-5.3-flash` via LiteLLM (`http://10.0.0.10:30803/v1`, key `<router-key>`),
+- Model stack: chat `glm-5.3-flash` via LiteLLM (`http://10.0.0.10:30803/v1`; key: see local `~/claude/saif-lab/ACCESS.md`),
   embeddings `bge-small-en-v1.5` in TEI on the VM, all reached same-origin through nginx `/v1`.
 
 ## Findings (why the kit looks the way it does)
@@ -47,7 +47,8 @@ Fork `abonillabeeche/NemoClawDLI`, branch `saif`. `main` mirrors upstream NVDLI/
 7. **Reboot:** OpenClaw holds a 5-minute `gateway-lifecycle` lease after an unclean stop and refuses to
    start until it expires; `recover` alone fails. `saif-recover` retries gateway restart + recover; the
    unit needs `RemainAfterExit=yes` / `KillMode=process` or systemd kills the forward `recover` starts.
-8. **Router auth:** only `Bearer <router-key>` works (others: `No connected db`). nginx injects it.
+8. **Router auth:** only the router's configured key works (others: `No connected db`); nginx injects it.
+   Credentials and access are documented locally in `~/claude/saif-lab/ACCESS.md`, never in this repo.
 9. **Test from the VM, not the Mac:** the Mac over Tailscale had 20% loss; Spark is a Tailscale exit node
    with constant network churn (`ERR_NETWORK_CHANGED`). Playwright harness lives in `~/saif-e2e` on the
    VM (not part of the kit; reinstall after a rebuild).

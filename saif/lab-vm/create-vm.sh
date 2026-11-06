@@ -14,7 +14,11 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 : "${IMAGE:=kasm-autoscale/ubuntu-noble}"
 : "${SSH_PUBKEY_FILE:=$HOME/.ssh/id_rsa.pub}"
 : "${LLM_URL:=http://10.0.0.10:30803/v1}" "${LLM_MODEL:=glm-5.3-flash}"
-: "${LLM_KEY:=<router-key>}"            # lab router master placeholder (not a secret)
+# Router key: never stored in this repo. Taken from $LLM_KEY or the local codex-glm config.
+if [ -z "${LLM_KEY:-}" ] && [ -r "$HOME/.codex-glm/config.toml" ]; then
+  LLM_KEY=$(sed -nE 's/^experimental_bearer_token *= *"([^"]+)".*/\1/p' "$HOME/.codex-glm/config.toml" | head -1)
+fi
+[ -n "${LLM_KEY:-}" ] || { echo "set LLM_KEY (lab router key; see ~/claude/saif-lab/ACCESS.md)" >&2; exit 1; }
 : "${HOSTNAME_FQDN:=saif-lab.5glinux.com}"
 : "${SANDBOX:=saif-agent}"
 : "${NEMOCLAW_REF:=525beba5024665def76bd69e81fad4d2b69e7cf6}"

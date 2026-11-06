@@ -16,7 +16,7 @@ docker info >/dev/null 2>&1 || { echo "docker not usable by $USER yet (log out/i
 KEY=""
 if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL [lab.env]: " KEY || true; echo
 else read -r KEY || true; fi
-# Lab router key is a non-secret placeholder kept in lab.env (<router-key>); used when none is given.
+# Lab router key from /etc/saif/lab.env (SAIF_LLM_KEY, set by create-vm.sh); used when none is given.
 KEY="${KEY:-${SAIF_LLM_KEY:-}}"
 # NemoClaw refuses RFC1918 inference endpoints (SSRF guard) unless the exact host is trusted.
 LLM_HOST=$(printf '%s' "$SAIF_LLM_URL" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
