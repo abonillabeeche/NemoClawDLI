@@ -4,7 +4,9 @@
   GET /healthz             -> {"status":"ok"}
   GET /api/agent           -> {"agent":{"agent":"openclaw","name":<sandbox>,"dashboardUrl":"/api/agent/launch"}}
                               (503 {"status":"starting"} until the sandbox answers dashboard-url)
-  WS  /ws/terminal?cmd=..  -> runs `bash -lc cmd` as this user; frames {"type":"stdout|stderr","data"} then {"type":"exit","code"}
+  WS  /ws/terminal?cmd=..  -> splits cmd on whitespace and execs it (no shell, quotes kept literally,
+                              like current Brev launchables; the course probes this and wraps shell
+                              work itself) as this user; frames {"type":"stdout|stderr","data"} then {"type":"exit","code"}
                               client sends {"type":"input","data"}; &stdio=pipe separates stdout/stderr
 
 /cli/gateway is proxied by nginx straight to the OpenClaw gateway (127.0.0.1:18789).
@@ -79,12 +81,19 @@ async def send(ws, **frame):
 async def terminal(ws, path):
     q = parse_qs(urlsplit(path).query)
     cmd = (q.get("cmd") or [""])[0] or "bash -l"
+    # Current launchables split on whitespace and keep quote characters (no shell). The course's
+    # gateway-token handoff relies on it: node -e eval(Buffer.from("<b64>","base64").toString())
+    argv = cmd.split()
     pipe = (q.get("stdio") or ["pty"])[0] == "pipe"
     env = {**os.environ, "TERM": "xterm-256color"}
     loop = asyncio.get_running_loop()
+    if not shutil.which(argv[0], path=env.get("PATH")):
+        await send(ws, type="stderr", stream="stderr", data=f"{argv[0]}: command not found\n")
+        await send(ws, type="exit", code=127)
+        return
 
     if pipe:
-        proc = await asyncio.create_subprocess_exec("bash", "-lc", cmd, stdin=asyncio.subprocess.PIPE,
+        proc = await asyncio.create_subprocess_exec(*argv, stdin=asyncio.subprocess.PIPE,
                                                     stdout=asyncio.subprocess.PIPE,
                                                     stderr=asyncio.subprocess.PIPE, env=env,
                                                     start_new_session=True)
@@ -111,7 +120,7 @@ async def terminal(ws, path):
         return
 
     master, slave = pty.openpty()
-    proc = subprocess.Popen(["bash", "-lc", cmd], stdin=slave, stdout=slave, stderr=slave, env=env,
+    proc = subprocess.Popen(argv, stdin=slave, stdout=slave, stderr=slave, env=env,
                             start_new_session=True, close_fds=True)
     os.close(slave)
     out_q = asyncio.Queue()

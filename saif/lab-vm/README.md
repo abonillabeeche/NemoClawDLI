@@ -9,7 +9,7 @@ call. Plain NemoClaw has none of those endpoints, so this VM adds them:
 | `/` (course) | `/dli/` | branded site from `saif-site.tar.gz` (published by `saif-pages`) |
 | `GET /api/agent` | agent metadata, `agent.dashboardUrl#token=` | `agent_shim.py` -> `nemoclaw <sandbox> dashboard-url --quiet` |
 | `WS /cli/gateway` | OpenClaw gateway | nginx -> `127.0.0.1:18789` (NemoClaw's loopback forward) |
-| `WS /ws/terminal?cmd=` | PTY | `agent_shim.py` (`bash -lc` as labadmin; `stdio=pipe` supported) |
+| `WS /ws/terminal?cmd=` | PTY, whitespace-split argv (no shell) | `agent_shim.py` (same contract; `stdio=pipe` supported) |
 
 Access: nginx basic auth (user `saif`, password in Secret `saif/saif-course-auth`), lab LAN /
 Tailscale only. `/ws/terminal` is a shell on the VM by design (same as the launchable).
