@@ -16,6 +16,8 @@ docker info >/dev/null 2>&1 || { echo "docker not usable by $USER yet (log out/i
 KEY=""
 if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL: " KEY || true; echo
 else read -r KEY || true; fi
+# NemoClaw refuses RFC1918 inference endpoints (SSRF guard) unless the exact host is trusted.
+LLM_HOST=$(printf '%s' "$SAIF_LLM_URL" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
 [ -n "$KEY" ] || { echo "no key on stdin: run from a real terminal (ssh -t ...) or pipe it: ssh ... saif-install-nemoclaw < keyfile" >&2; exit 1; }
 
 # tmux keeps the long onboarding alive across SSH drops; the key travels only in its env.
@@ -25,7 +27,7 @@ tmux new-session -d -s nemoclaw-install \
      NEMOCLAW_INSTALL_REF=${NEMOCLAW_INSTALL_REF} NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 \
      NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=custom NEMOCLAW_ENDPOINT_URL=${SAIF_LLM_URL} \
      NEMOCLAW_MODEL=${SAIF_LLM_MODEL} NEMOCLAW_PREFERRED_API=openai-completions \
-     NEMOCLAW_SANDBOX_NAME=${SAIF_SANDBOX} NEMOCLAW_POLICY_TIER=balanced NEMOCLAW_WEB_SEARCH_PROVIDER=none \
+     NEMOCLAW_TRUSTED_PRIVATE_HOSTS=${LLM_HOST} NEMOCLAW_SANDBOX_NAME=${SAIF_SANDBOX} NEMOCLAW_POLICY_TIER=balanced NEMOCLAW_WEB_SEARCH_PROVIDER=none \
      bash 2>&1 | tee ~/nemoclaw-install.log; echo EXIT=\$? | tee -a ~/nemoclaw-install.log; \
      sudo systemctl restart saif-agent-shim; exec bash"
 unset KEY
