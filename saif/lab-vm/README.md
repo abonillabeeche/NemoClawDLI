@@ -40,3 +40,13 @@ OpenClaw `connect.challenge` through nginx, `/ws/terminal` runs `openshell sandb
 turn answers. Gotchas fixed in this kit: binutils, umask 022 for nvm, `NEMOCLAW_TRUSTED_PRIVATE_HOSTS`
 for the RFC1918 router, nginx HTTP/1.1 to the shim. Switch model:
 `nemoclaw inference set --provider compatible-endpoint --model <id> --sandbox saif-agent`.
+
+## HTTPS is required for lessons 3-4 in a browser
+
+The course signs its OpenClaw gateway login with WebCrypto Ed25519 (`_gateway_auth.js`), which
+browsers expose only in secure contexts. Over `http://10.0.0.164` the gateway socket opens and the
+gateway logs `closed before connect`. Use either:
+
+- `ssh -N -L 8164:127.0.0.1:80 labadmin@10.0.0.164` and browse `http://localhost:8164` (localhost is secure), or
+- HTTPS: `cli53 rrcreate 5glinux.com 'saif-lab 300 A 10.0.0.164'`, then `saif/lab-vm/deploy-tls.sh`
+  (lab wildcard cert; rerun after renewals), browse `https://saif-lab.5glinux.com`.
