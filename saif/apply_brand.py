@@ -34,14 +34,19 @@ def main():
     ap.add_argument("root")
     ap.add_argument("--config", default=str(here / "brand.json"))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--only-llm", action="store_true", help="apply only the llm block (lab overlay on an already-branded site)")
     a = ap.parse_args()
 
     cfg = json.loads(Path(a.config).read_text())
+    llm_cfg = cfg.get("llm", {})
+    if "rules_from" in llm_cfg and "rules" not in llm_cfg:  # overlay reuses the main config's llm rules
+        base = json.loads((Path(a.config).parent / llm_cfg["rules_from"]).read_text())
+        llm_cfg["rules"] = base["llm"]["rules"]
     root = Path(a.root)
     if not (root / "nemoclaw" / "index.html").is_file() and not (root / "index.html").is_file():
         sys.exit(f"{root} does not look like a built site")
 
-    rules = [("color", r) for r in cfg["colors"]] + [("text", r) for r in cfg["text"]]
+    rules = [] if a.only_llm else [("color", r) for r in cfg["colors"]] + [("text", r) for r in cfg["text"]]
     llm = cfg.get("llm", {})
     if llm.get("base_url"):
         base = llm["base_url"].rstrip("/")
@@ -61,6 +66,8 @@ def main():
         print("llm: base_url empty, keeping upstream NVIDIA endpoint defaults")
     counts = {r["from"]: 0 for _, r in rules}
     params, attribution = cfg.get("strip_query_params", []), cfg.get("attribution_html", "")
+    if a.only_llm:
+        params, attribution = [], ""
     param_hits = footer_hits = files_changed = 0
     skip = set(cfg["skip_dirs"])
 
@@ -73,7 +80,9 @@ def main():
             text = f.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
-        new = text
+        # Strip tracking params first so text rules always target clean URLs (single pass or overlay).
+        new, n = strip_params(text, params)
+        param_hits += n
         for kind, r in rules:
             if kind == "color":
                 pat = re.compile(re.escape(r["from"]), re.IGNORECASE)
@@ -82,8 +91,6 @@ def main():
                 n = new.count(r["from"])
                 new = new.replace(r["from"], r["to"])
             counts[r["from"]] += n
-        new, n = strip_params(new, params)
-        param_hits += n
         if attribution and f.suffix == ".html" and "</footer>" in new and "saif-attribution" not in new:
             new = new.replace("</footer>", "  " + attribution + "\n  </footer>", 1)
             footer_hits += 1

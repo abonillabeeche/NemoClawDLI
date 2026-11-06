@@ -184,7 +184,7 @@
         "min": 1
       },
       {
-        "from": "Chat and embeddings use models from <a href=\"https://build.nvidia.com/?ncid=ref-dli-146986\" target=\"_blank\" rel=\"noopener\"><code>build.nvidia.com</code></a> by default.",
+        "from": "Chat and embeddings use models from <a href=\"https://build.nvidia.com/\" target=\"_blank\" rel=\"noopener\"><code>build.nvidia.com</code></a> by default.",
         "to": "Chat and embeddings use the {router_label} by default (lab network or Tailscale only).",
         "min": 1
       },

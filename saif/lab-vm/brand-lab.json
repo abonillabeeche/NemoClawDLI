@@ -1,0 +1,18 @@
+{
+  "note": "Lab-VM overlay, applied with apply_brand.py --only-llm on top of the already-branded public site (saif-update-course). Model calls go to the VM's own origin: nginx /v1 -> lab LiteLLM router, /v1/embeddings -> TEI.",
+  "skip_dirs": ["vendor", ".git"],
+  "extensions": [".html", ".js", ".mjs", ".css", ".svg", ".json"],
+  "colors": [],
+  "text": [],
+  "llm": {
+    "base_url": "https://saif-lab.5glinux.com/v1",
+    "router_label": "SAIF lab model router",
+    "key_help_url": "https://github.com/abonillabeeche/NemoClawDLI/blob/saif/saif/lab-vm/README.md",
+    "model_map": {
+      "nvidia/nemotron-3.5-lightning-30b-a3b": "glm-5.3-flash",
+      "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning": "glm-5.3-flash",
+      "nvidia/nemotron-3-embed-1b": "bge-small-en-v1.5"
+    },
+    "rules_from": "../brand.json"
+  }
+}

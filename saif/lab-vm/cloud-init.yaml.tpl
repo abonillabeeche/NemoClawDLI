@@ -41,16 +41,33 @@ write_files:
     permissions: "0755"
     content: |
       #!/usr/bin/env bash
-      # Refresh the branded course from the fork's Pages tarball.
+      # Refresh the course from the fork's Pages tarball, then apply the lab overlay: model calls
+      # to this VM's /v1 (router + local embeddings) and RAG vectors re-embedded with the lab model.
       set -euo pipefail
       . /etc/saif/lab.env
       tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
       curl -fsSL --retry 5 "$SAIF_SITE_TARBALL" -o "$tmp/site.tgz"
       mkdir -p "$tmp/site" && tar -xzf "$tmp/site.tgz" -C "$tmp/site"
+      python3 -I /opt/saif/apply_brand.py "$tmp/site" --only-llm --config /opt/saif/lab/brand-lab.json
+      python3 -I /opt/saif/lab/rebuild_rag_index.py "$tmp/site" bge-small-en-v1.5 http://127.0.0.1:8081/v1
       sudo rm -rf /var/lib/saif-course/site.new && sudo mv "$tmp/site" /var/lib/saif-course/site.new
       sudo chmod -R a+rX /var/lib/saif-course/site.new
       sudo rm -rf /var/lib/saif-course/site && sudo mv /var/lib/saif-course/site.new /var/lib/saif-course/site
-      echo "course updated from $SAIF_SITE_TARBALL"
+      echo "course updated from $SAIF_SITE_TARBALL (lab overlay applied)"
+  - path: /opt/saif/apply_brand.py
+    permissions: "0755"
+    content: |
+@@FILE:../apply_brand.py@@
+  - path: /opt/saif/brand.json
+    content: |
+@@FILE:../brand.json@@
+  - path: /opt/saif/lab/brand-lab.json
+    content: |
+@@FILE:brand-lab.json@@
+  - path: /opt/saif/lab/rebuild_rag_index.py
+    permissions: "0755"
+    content: |
+@@FILE:rebuild_rag_index.py@@
   - path: /etc/systemd/system/saif-agent-shim.service
     content: |
       [Unit]
@@ -69,7 +86,10 @@ runcmd:
   - [chown, "root:www-data", /etc/nginx/saif.htpasswd]
   - [mkdir, -p, /var/lib/saif-course/site]
   - [sh, -c, "echo '<h1>SAIF course not downloaded yet</h1><p>run saif-update-course</p>' > /var/lib/saif-course/site/index.html"]
-  - [sh, -c, "su - labadmin -c saif-update-course || true"]
+  # Local embeddings for the browser lessons (router has none). Small model + hard memory cap:
+  # TEI's defaults with Qwen3-Embedding-0.6B OOM-killed the VM during warm-up.
+  - [docker, run, -d, --name, saif-embed, --restart, unless-stopped, --memory, 1500m, --memory-swap, 1500m, --cpus, "2", -p, "127.0.0.1:8081:80", -v, "/var/lib/saif-embed:/data", "ghcr.io/huggingface/text-embeddings-inference:cpu-1.8", --model-id, BAAI/bge-small-en-v1.5]
+  - [sh, -c, "for i in $(seq 1 60); do curl -sf 127.0.0.1:8081/health && break; sleep 5; done; su - labadmin -c saif-update-course || true"]
   - [rm, -f, /etc/nginx/sites-enabled/default]
   - [ln, -sf, /etc/nginx/sites-available/saif, /etc/nginx/sites-enabled/saif]
   - [systemctl, daemon-reload]

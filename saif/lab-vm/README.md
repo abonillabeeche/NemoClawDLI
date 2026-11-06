@@ -50,3 +50,18 @@ gateway logs `closed before connect`. Use either:
 - `ssh -N -L 8164:127.0.0.1:80 labadmin@10.0.0.164` and browse `http://localhost:8164` (localhost is secure), or
 - HTTPS: `cli53 rrcreate 5glinux.com 'saif-lab 300 A 10.0.0.164'`, then `saif/lab-vm/deploy-tls.sh`
   (lab wildcard cert; rerun after renewals), browse `https://saif-lab.5glinux.com`.
+
+## Lab overlay: browser lessons use the lab models (2026-11-06)
+
+`saif-update-course` applies `brand-lab.json` (`apply_brand.py --only-llm`) to the downloaded public
+site and re-embeds every `rag_index.json` (`rebuild_rag_index.py`). Result on the VM only:
+
+- default chat/embedding endpoint `https://saif-lab.5glinux.com/v1` (same origin; nginx `/v1/` ->
+  router with `Bearer <router-key>`, `/v1/embeddings` -> TEI); any text works as the key
+- models: `nvidia/nemotron-3.5-lightning-30b-a3b` and the omni model -> `glm-5.3-flash` (no vision;
+  GLM cannot disable thinking, so "direct" and "reasoning" maze modes both reason);
+  `nvidia/nemotron-3-embed-1b` -> `bge-small-en-v1.5` (384d; the course's embed model is not public)
+- TEI container `saif-embed`: bge-small on CPU, capped at 1.5 GB (Qwen3-Embedding-0.6B OOM-killed
+  the VM during warm-up even at 3 GB)
+
+The GitHub Pages copy keeps upstream's NVIDIA defaults.
