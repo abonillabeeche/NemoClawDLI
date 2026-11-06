@@ -4,6 +4,8 @@
 #   ssh -t labadmin@<vm> saif-install-nemoclaw          # prompts for the key
 #   saif-install-nemoclaw --status | --attach
 set -euo pipefail
+# Ubuntu gives users umask 002; NemoClaw refuses a group-writable npm/nvm prefix.
+umask 022
 . /etc/saif/lab.env
 case "${1:-}" in
   --status) tmux has-session -t nemoclaw-install 2>/dev/null && echo "installer running (saif-install-nemoclaw --attach)" || echo "installer not running"; tail -n 25 ~/nemoclaw-install.log 2>/dev/null; exit 0 ;;
@@ -19,7 +21,7 @@ else read -r KEY || true; fi
 # tmux keeps the long onboarding alive across SSH drops; the key travels only in its env.
 tmux new-session -d -s nemoclaw-install \
   -e COMPATIBLE_API_KEY="$KEY" \
-  "set -o pipefail; curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/${NEMOCLAW_INSTALL_REF}/install.sh | \
+  "umask 022; set -o pipefail; [ -d ~/.nvm ] && chmod -R go-w ~/.nvm; curl -fsSL https://raw.githubusercontent.com/NVIDIA/NemoClaw/${NEMOCLAW_INSTALL_REF}/install.sh | \
      NEMOCLAW_INSTALL_REF=${NEMOCLAW_INSTALL_REF} NEMOCLAW_NON_INTERACTIVE=1 NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE=1 \
      NEMOCLAW_AGENT=openclaw NEMOCLAW_PROVIDER=custom NEMOCLAW_ENDPOINT_URL=${SAIF_LLM_URL} \
      NEMOCLAW_MODEL=${SAIF_LLM_MODEL} NEMOCLAW_PREFERRED_API=openai-completions \
