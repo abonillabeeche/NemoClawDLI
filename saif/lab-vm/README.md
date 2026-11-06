@@ -65,3 +65,14 @@ site and re-embeds every `rag_index.json` (`rebuild_rag_index.py`). Result on th
   the VM during warm-up even at 3 GB)
 
 The GitHub Pages copy keeps upstream's NVIDIA defaults.
+
+## Full-course E2E (2026-11-06, Playwright headless on the VM, lab overlay, GLM-5.3-Flash)
+
+Every runnable cell passed at least once: 1a 15/15, 1b 6/6, 1c 26/26, 2a 21/21, 2b 21/21, 2c 16/16,
+3a 17/17 (connection audit: metadata, gateway, terminal, health), 3b 13/13, 3c 11/11, 4a 14/14,
+4b 4/4, glossary 6/6; Course Assistant answers; home/studio/localization/courses/dependencies/4c
+load with no console or HTTP errors. Fixes it took (all in this kit): `reasoning_effort: "low"`
+wherever the course disables thinking (GLM ignores `enable_thinking: false`), larger token caps
+(01a direct maze, 02c workers), OpenClaw turn deadlines 240 s idle / 600 s total, and shim pipe
+mode without stdin. Expect slow agent turns (GLM at default effort) and errors for router models
+that are not loaded in the 3a latency benchmark.
