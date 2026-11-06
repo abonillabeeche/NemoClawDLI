@@ -9,7 +9,7 @@ users:
     ssh_authorized_keys:
       - @@SSH_PUBKEY@@
 package_update: true
-packages: [docker.io, nginx, python3-websockets, tmux, jq, curl, git, qemu-guest-agent]
+packages: [docker.io, binutils, nginx, python3-websockets, tmux, jq, curl, git, qemu-guest-agent]
 swap:
   filename: /swapfile
   size: 8G
