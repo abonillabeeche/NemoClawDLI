@@ -14,15 +14,21 @@ call. Plain NemoClaw has none of those endpoints, so this VM adds them:
 Access: nginx basic auth (user `saif`, password in Secret `saif/saif-course-auth`), lab LAN /
 Tailscale only. `/ws/terminal` is a shell on the VM by design (same as the launchable).
 
-## Use
+## Use (fully unattended)
+
+Prereqs once: Calix reservation 10.0.0.164 <-> 52:54:00:5a:1f:62, DNS `saif-lab.5glinux.com` -> 10.0.0.164,
+lab wildcard cert in `~/.acme.sh/*.5glinux.com_ecc` on the machine running the script.
 
 ```bash
-saif/lab-vm/create-vm.sh                      # far-edge, 10.0.0.164, 4 vCPU / 12Gi (+8G swap) / 60Gi
-# reserve the IP for the MAC on the Calix, then:
-ssh labadmin@10.0.0.164 cloud-init status --wait
-echo <router-key> | ssh labadmin@10.0.0.164 saif-install-nemoclaw   # lab router takes any bearer
-ssh labadmin@10.0.0.164 saif-install-nemoclaw --status
+saif/lab-vm/create-vm.sh     # far-edge, 4 vCPU / 12Gi (+8G swap) / 60Gi; waits for cloud-init, deploys HTTPS
 ```
+
+Cloud-init installs nginx, the agent shim, local embeddings (TEI), the course with the lab overlay, and
+then NemoClaw/OpenClaw in the background once `SAIF_LLM_MODEL` answers (`saif-wait-model`; log
+`/var/log/saif-nemoclaw-autoinstall.log`). `saif-nemoclaw-recover.service` runs `saif-recover` at every
+boot: NemoClaw's documented reboot sequence plus a retry loop, because OpenClaw keeps a 5-minute
+gateway state lease after an unclean stop and refuses to start until it expires
+("another OpenClaw process owns gateway-lifecycle").
 
 Open `http://10.0.0.164/nemoclaw/03a-kickstart.html`, set the launchable URL to `http://10.0.0.164`,
 and connect. Router/model live in `/etc/saif/lab.env` (`SAIF_LLM_URL`, `SAIF_LLM_MODEL`); change them
@@ -76,3 +82,10 @@ wherever the course disables thinking (GLM ignores `enable_thinking: false`), la
 (01a direct maze, 02c workers), OpenClaw turn deadlines 240 s idle / 600 s total, and shim pipe
 mode without stdin. Expect slow agent turns (GLM at default effort) and errors for router models
 that are not loaded in the 3a latency benchmark.
+
+## Vision models
+
+`glm-5.3-flash` (Sparks) accepts images and handles image + tool call in one turn (5/5 colour test,
+`move` tool called), so the 01a "omni" maze mode maps to it. `qwen2.5-vl-7b` (vllm-qwen-vl on
+agx-orin-2, NodePort 30801) also reads images (5/5) but has no LiteLLM route and its vLLM lacks
+`--enable-auto-tool-choice --tool-call-parser`, so it cannot drive tool-calling vision tasks as deployed.

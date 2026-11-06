@@ -35,6 +35,7 @@ def main():
     ap.add_argument("--config", default=str(here / "brand.json"))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--only-llm", action="store_true", help="apply only the llm block (lab overlay on an already-branded site)")
+    ap.add_argument("--base-url", help="override llm.base_url (e.g. https://<vm-hostname>/v1)")
     a = ap.parse_args()
 
     cfg = json.loads(Path(a.config).read_text())
@@ -49,6 +50,8 @@ def main():
 
     rules = [] if a.only_llm else [("color", r) for r in cfg["colors"]] + [("text", r) for r in cfg["text"]]
     llm = cfg.get("llm", {})
+    if a.base_url:
+        llm["base_url"] = a.base_url
     if llm.get("base_url"):
         base = llm["base_url"].rstrip("/")
         if not base.startswith("https://"):

@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# NemoClaw's documented "Recover After a Host Reboot" sequence (docs/deployment/deploy-to-headless-server),
+# automated for the SAIF lab VM, plus a retry loop for OpenClaw's stale gateway lease after a reboot.
+# Runs at boot (saif-nemoclaw-recover.service) and by hand.
+set -uo pipefail
+. /etc/saif/lab.env
+export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
+SB="${SAIF_SANDBOX:-saif-agent}"
+log() { echo "[saif-recover] $*"; }
+command -v nemoclaw >/dev/null || { log "nemoclaw not installed yet; nothing to recover"; exit 0; }
+for i in $(seq 1 30); do docker info >/dev/null 2>&1 && break; sleep 5; done
+docker info >/dev/null 2>&1 || { log "docker is not ready"; exit 1; }
+status=$(nemoclaw "$SB" status 2>&1); log "status: $(echo "$status" | grep -iE 'state|phase|stopped|ready|running' | head -3 | tr '\n' ' ')"
+if echo "$status" | grep -qiE 'stopped|not running|exited'; then log "starting sandbox"; nemoclaw "$SB" start; fi
+for i in $(seq 1 60); do openshell sandbox list 2>/dev/null | grep -E "^$SB\b" | grep -q Ready && break; sleep 5; done
+fwd_ok() { [ "$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:18789/)" != 000 ]; }
+# After an unclean stop the OpenClaw gateway keeps a 5-minute state lease in its SQLite state, so it
+# refuses to start ("another OpenClaw process owns gateway-lifecycle") until that lease expires.
+# Retry the documented steps every minute until the dashboard forward answers (up to ~15 min).
+for attempt in $(seq 1 15); do
+  nemoclaw "$SB" connect --probe-only >/dev/null 2>&1 || true
+  fwd_ok && { log "gateway + forward healthy (attempt $attempt)"; break; }
+  log "attempt $attempt: gateway/forward down; gateway restart + recover"
+  nemoclaw "$SB" gateway restart >/dev/null 2>&1 || true
+  sleep 15
+  nemoclaw "$SB" recover 2>&1 | grep -E "Probe (complete|failed)" | head -1
+  fwd_ok && { log "recovered on attempt $attempt"; break; }
+  sleep 45
+done
+fwd_ok || log "gateway still down after retries; see: nemoclaw $SB logs"
+nemoclaw "$SB" status 2>&1 | tail -5
+curl -s -m 10 -o /dev/null -w "[saif-recover] /api/agent -> %{http_code}\n" http://127.0.0.1:8090/api/agent

@@ -14,11 +14,13 @@ esac
 [ "$(id -u)" -ne 0 ] || { echo "run as labadmin, not root" >&2; exit 1; }
 docker info >/dev/null 2>&1 || { echo "docker not usable by $USER yet (log out/in after cloud-init)" >&2; exit 1; }
 KEY=""
-if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL: " KEY || true; echo
+if [ -t 0 ]; then read -r -s -p "Model router API key for $SAIF_LLM_URL [lab.env]: " KEY || true; echo
 else read -r KEY || true; fi
+# Lab router key is a non-secret placeholder kept in lab.env (<router-key>); used when none is given.
+KEY="${KEY:-${SAIF_LLM_KEY:-}}"
 # NemoClaw refuses RFC1918 inference endpoints (SSRF guard) unless the exact host is trusted.
 LLM_HOST=$(printf '%s' "$SAIF_LLM_URL" | sed -E 's#^[a-z]+://([^/:]+).*#\1#')
-[ -n "$KEY" ] || { echo "no key on stdin: run from a real terminal (ssh -t ...) or pipe it: ssh ... saif-install-nemoclaw < keyfile" >&2; exit 1; }
+[ -n "$KEY" ] || { echo "no key: set SAIF_LLM_KEY in /etc/saif/lab.env, run from a terminal (ssh -t ...), or pipe it on stdin" >&2; exit 1; }
 
 # tmux keeps the long onboarding alive across SSH drops; the key travels only in its env.
 tmux new-session -d -s nemoclaw-install \

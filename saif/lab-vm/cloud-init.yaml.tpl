@@ -19,6 +19,8 @@ write_files:
     content: |
       SAIF_LLM_URL=@@LLM_URL@@
       SAIF_LLM_MODEL=@@LLM_MODEL@@
+      SAIF_LLM_KEY=@@LLM_KEY@@
+      SAIF_HOSTNAME=@@HOSTNAME@@
       SAIF_SANDBOX=@@SANDBOX@@
       NEMOCLAW_INSTALL_REF=@@NEMOCLAW_REF@@
       SAIF_SITE_TARBALL=@@SITE_TARBALL@@
@@ -48,7 +50,7 @@ write_files:
       tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
       curl -fsSL --retry 5 "$SAIF_SITE_TARBALL" -o "$tmp/site.tgz"
       mkdir -p "$tmp/site" && tar -xzf "$tmp/site.tgz" -C "$tmp/site"
-      python3 -I /opt/saif/apply_brand.py "$tmp/site" --only-llm --config /opt/saif/lab/brand-lab.json
+      python3 -I /opt/saif/apply_brand.py "$tmp/site" --only-llm --config /opt/saif/lab/brand-lab.json --base-url "https://$SAIF_HOSTNAME/v1"
       python3 -I /opt/saif/lab/rebuild_rag_index.py "$tmp/site" bge-small-en-v1.5 http://127.0.0.1:8081/v1
       sudo rm -rf /var/lib/saif-course/site.new && sudo mv "$tmp/site" /var/lib/saif-course/site.new
       sudo chmod -R a+rX /var/lib/saif-course/site.new
@@ -68,6 +70,36 @@ write_files:
     permissions: "0755"
     content: |
 @@FILE:rebuild_rag_index.py@@
+  - path: /usr/local/bin/saif-recover
+    permissions: "0755"
+    content: |
+@@FILE:saif-recover@@
+  - path: /usr/local/bin/saif-wait-model
+    permissions: "0755"
+    content: |
+      #!/usr/bin/env bash
+      # Block until the lab router answers a chat turn with SAIF_LLM_MODEL (NemoClaw onboarding verifies it).
+      . /etc/saif/lab.env
+      for i in $(seq 1 ${1:-120}); do
+        code=$(curl -s -m 60 -o /dev/null -w '%{http_code}' "$SAIF_LLM_URL/chat/completions" -H "Authorization: Bearer $SAIF_LLM_KEY" \
+          -H 'Content-Type: application/json' -d "{\"model\":\"$SAIF_LLM_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"ok\"}],\"max_tokens\":5}")
+        [ "$code" = 200 ] && { echo "model $SAIF_LLM_MODEL ready"; exit 0; }
+        echo "waiting for $SAIF_LLM_MODEL at $SAIF_LLM_URL (HTTP $code)"; sleep 30
+      done
+      exit 1
+  - path: /etc/systemd/system/saif-nemoclaw-recover.service
+    content: |
+      [Unit]
+      Description=SAIF: NemoClaw documented post-reboot recovery (status/start/probe/recover)
+      After=network-online.target docker.service
+      Wants=network-online.target docker.service
+      [Service]
+      Type=oneshot
+      User=labadmin
+      ExecStart=/usr/local/bin/saif-recover
+      TimeoutStartSec=1500
+      [Install]
+      WantedBy=multi-user.target
   - path: /etc/systemd/system/saif-agent-shim.service
     content: |
       [Unit]
@@ -94,4 +126,9 @@ runcmd:
   - [ln, -sf, /etc/nginx/sites-available/saif, /etc/nginx/sites-enabled/saif]
   - [systemctl, daemon-reload]
   - [systemctl, enable, --now, qemu-guest-agent, docker, saif-agent-shim]
+  - [systemctl, enable, saif-nemoclaw-recover]
   - [systemctl, reload, nginx]
+  # NemoClaw + OpenClaw, unattended: the lab router key is the non-secret placeholder in lab.env.
+  # Onboarding verifies a model call, so wait for the model first (up to ~60 min), then install in tmux.
+  # Backgrounded so cloud-init (and create-vm.sh's HTTPS step) does not wait on the model.
+  - [sh, -c, "nohup su - labadmin -c 'saif-wait-model 120 && saif-install-nemoclaw </dev/null' >> /var/log/saif-nemoclaw-autoinstall.log 2>&1 &"]
